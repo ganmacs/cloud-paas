@@ -1,4 +1,4 @@
-## For Lecture of Cloud bpi in The University of Tokey
+## For Lecture of Cloud pbi in The University of Tokyo
 
 ### Description
 
