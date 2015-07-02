@@ -105,7 +105,7 @@ ssh $LXC_USER_NAME@$L_NAME \"cd /home/$LXC_USER_NAME/$REPO; git pull\""
 
 clone_repo() {
     local path="git@157.82.3.165:$NAME/$REPO.git"
-    ssh $LXC_USER_NAME@157.82.3.$IP "git clone $path /home/$LXC_USER_NAME/$REPO"
+    ssh $LXC_USER_NAME@157.82.3.165 "git clone $path /home/$LXC_USER_NAME/$REPO"
     echo "[FINISH] --------- clone repo\n"
 }
 
