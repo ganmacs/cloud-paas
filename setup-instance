@@ -58,7 +58,7 @@ create_and_copy_lxc_pubkey() {
     cat /home/git/.ssh/id_rsa.pub >> "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
 
     lxc-attach -n "$L_NAME" -- chown -R "$LXC_USER_NAME:$LXC_USER_NAME" "/home/$LXC_USER_NAME/.ssh"
-    ssh "obana@$L_NAME" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
+    ssh "$LXC_USER_NAME@$L_NAME" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
 
     lxc-attach -n "$L_NAME" -- cat "/home/$LXC_USER_NAME/.ssh/id_rsa.pub" > "$pub_key_path"
     chmod 70 0 "$pub_key_path"
@@ -85,7 +85,7 @@ create_git_repository() {
 
 create_post_hook() {
     local bash_script="#!/bin/sh
-ssh $L_NAME \"cd /home/$LXC_USER_NAME/$REPO; git pull\""
+ssh $LXC_USER_NAME@$L_NAME \"cd /home/$LXC_USER_NAME/$REPO; git pull\""
 
     local git_dir="/home/git/repositories/$NAME/$REPO.git/"
     local post_hook_path="$git_dir/hooks/post-receive"
