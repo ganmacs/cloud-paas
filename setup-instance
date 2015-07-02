@@ -42,7 +42,7 @@ restart_lxc() {
 }
 
 set_bridge() {
-    sudo cat "./template.xml" | awk '{gsub(/<%=lxcname%>/, "'${L_NAME}'");print $0;}' > tmp.xml
+    sudo cat "./templete.xml" | awk '{gsub(/<%=lxcname%>/, "'${L_NAME}'");print $0;}' > tmp.xml
     sudo virsh -c lxc:// define tmp.xml
     sudo virsh -c lxc:// start $L_NAME
     echo "[FINISH] --------- set bridge\n"
