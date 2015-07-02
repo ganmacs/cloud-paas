@@ -21,7 +21,7 @@ LXC_USER_NAME="obana"
 
 create_lxc() {
     sudo lxc-create -n $L_NAME -t ubuntu
-    sudo cat "./interfaces"  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
+    sudo cat ./interfaces  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
     sudo lxc-start -n $L_NAME -d # error
     echo "[FINISH] --------- created lxc\n"
 }
