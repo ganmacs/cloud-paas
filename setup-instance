@@ -33,6 +33,12 @@ setup_lxc () {
     echo "[FINISH] --------- setup lxc\n"
 }
 
+set_bridge() {
+    sudo cat "./template.xml" | awk '{gsub(/<%=lxcname%>/, "'${L_NAME}'");print $0;}' > tmp.xml
+    sudo virsh -c lxc:// define tmp.xml
+    sudo virsh -c lxc:// start $L_NAME
+}
+
 create_and_copy_lxc_pubkey() {
     local pub_key_path="/home/gitadmin/gitolite-admin/keydir/$L_NAME.pub"
 
@@ -102,6 +108,7 @@ main() {
     if [[ $# > 2 ]]; then
         create_lxc
         setup_lxc
+        set_bridge
         create_and_copy_lxc_pubkey
 
         create_git_repository
