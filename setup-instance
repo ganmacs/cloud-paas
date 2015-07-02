@@ -21,6 +21,7 @@ LXC_USER_NAME="obana"
 
 create_lxc() {
     sudo lxc-create -n $L_NAME -t ubuntu
+    sudo cat "./interfaces"  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
     sudo lxc-start -n $L_NAME -d # error
     echo "[FINISH] --------- created lxc\n"
 }
@@ -33,10 +34,18 @@ setup_lxc () {
     echo "[FINISH] --------- setup lxc\n"
 }
 
+restart_lxc() {
+    sudo lxc-stop -n $L_NAME -t ubuntu
+    sudo cat "./interfaces.default"  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
+    sudo lxc-start -n $L_NAME -d # error
+    echo "[FINISH] --------- restart lxc\n"
+}
+
 set_bridge() {
     sudo cat "./template.xml" | awk '{gsub(/<%=lxcname%>/, "'${L_NAME}'");print $0;}' > tmp.xml
     sudo virsh -c lxc:// define tmp.xml
     sudo virsh -c lxc:// start $L_NAME
+    echo "[FINISH] --------- set bridge\n"
 }
 
 create_and_copy_lxc_pubkey() {
@@ -51,7 +60,7 @@ create_and_copy_lxc_pubkey() {
     ssh "$L_NAME" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
 
     lxc-attach -n "$L_NAME" -- cat "/home/$LXC_USER_NAME/.ssh/id_rsa.pub" > "$pub_key_path"
-    chmod 700 "$pub_key_path"
+    chmod 70 0 "$pub_key_path"
     chown gitadmin:gitadmin "$pub_key_path"
 
     echo "[FINISH] --------- create and copy lxc pub key\n"
@@ -108,6 +117,7 @@ main() {
     if [[ $# > 1 ]]; then
         create_lxc
         setup_lxc
+        restart_lxc
         set_bridge
         create_and_copy_lxc_pubkey
 
