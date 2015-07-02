@@ -61,7 +61,7 @@ create_and_copy_lxc_pubkey() {
     ssh "$LXC_USER_NAME@$L_NAME" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
 
     lxc-attach -n "$L_NAME" -- cat "/home/$LXC_USER_NAME/.ssh/id_rsa.pub" > "$pub_key_path"
-    chmod 70 0 "$pub_key_path"
+    chmod 700 "$pub_key_path"
     chown gitadmin:gitadmin "$pub_key_path"
 
     echo "[FINISH] --------- create and copy lxc pub key\n"
