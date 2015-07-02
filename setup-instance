@@ -37,6 +37,7 @@ setup_lxc () {
 restart_lxc() {
     sudo lxc-stop -n $L_NAME -t ubuntu
     sudo cat "./interfaces.default"  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
+    sleep 4
     sudo lxc-start -n $L_NAME -d # error
     echo "[FINISH] --------- restart lxc\n"
 }
@@ -57,7 +58,7 @@ create_and_copy_lxc_pubkey() {
     cat /home/git/.ssh/id_rsa.pub >> "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
 
     lxc-attach -n "$L_NAME" -- chown -R "$LXC_USER_NAME:$LXC_USER_NAME" "/home/$LXC_USER_NAME/.ssh"
-    ssh "$L_NAME" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
+    ssh "obana@$L_NAME" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
 
     lxc-attach -n "$L_NAME" -- cat "/home/$LXC_USER_NAME/.ssh/id_rsa.pub" > "$pub_key_path"
     chmod 70 0 "$pub_key_path"
