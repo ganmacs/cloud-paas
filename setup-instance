@@ -2,26 +2,25 @@
 
 # const
 USAGE="[USAGE]
-$ ./setup <username> <reponame> <ip>
+$ ./setup <username> <reponame>
 
 [Requirement]
 exec by root
 
 [Example]
-$ ./setup seri sandbox 167
+$ ./setup seri sandbox
 => craete 'seri/sandbox' git repository
-=> create linux container that name is 'sandbox' and ip is '157.82.3.167'
+=> create linux container that name is 'sandbox' and host name is 'seri-sandbox'
 "
 
 NAME=$1
 REPO=$2
 IP=$3
-L_NAME="$REPO$NAME"
+L_NAME="$REPO.$NAME"
 LXC_USER_NAME="obana"
 
 create_lxc() {
     sudo lxc-create -n $L_NAME -t ubuntu
-    sudo cat "./interfaces" | awk  '{gsub(/<%=ip%>/, '${IP}'); gsub(/<%=name%>/, "'${L_NAME}'");print $0;}' | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
     sudo lxc-start -n $L_NAME -d # error
     echo "[FINISH] --------- created lxc\n"
 }
@@ -43,7 +42,7 @@ create_and_copy_lxc_pubkey() {
     cat /home/git/.ssh/id_rsa.pub >> "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
 
     lxc-attach -n "$L_NAME" -- chown -R "$LXC_USER_NAME:$LXC_USER_NAME" "/home/$LXC_USER_NAME/.ssh"
-    ssh $LXC_USER_NAME@157.82.3.$IP "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
+    ssh "$L_NAME" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
 
     lxc-attach -n "$L_NAME" -- cat "/home/$LXC_USER_NAME/.ssh/id_rsa.pub" > "$pub_key_path"
     chmod 700 "$pub_key_path"
@@ -68,10 +67,9 @@ create_git_repository() {
     echo "[FINISH] --------- create git repository\n"
 }
 
-
 create_post_hook() {
     local bash_script="#!/bin/sh
-ssh $LXC_USER_NAME@157.82.3.$IP \"cd /home/$LXC_USER_NAME/$REPO; git pull\""
+ssh $L_NAME \"cd /home/$LXC_USER_NAME/$REPO; git pull\""
 
     local git_dir="/home/git/repositories/$NAME/$REPO.git/"
     local post_hook_path="$git_dir/hooks/post-receive"
@@ -90,7 +88,7 @@ ssh $LXC_USER_NAME@157.82.3.$IP \"cd /home/$LXC_USER_NAME/$REPO; git pull\""
 }
 
 clone_repo() {
-    local path="git@157.82.3.160:$NAME/$REPO.git"
+    local path="git@157.82.3.164:$NAME/$REPO.git"
     ssh $LXC_USER_NAME@157.82.3.$IP "git clone $path /home/$LXC_USER_NAME/$REPO"
     echo "[FINISH] --------- clone repo\n"
 }
