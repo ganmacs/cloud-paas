@@ -89,15 +89,15 @@ clone_repo() {
     echo "[FINISH] --------- clone repo\n"
 }
 
-stop_lxc() {
+restart_lxc() {
     sudo cat "./apache.conf" | awk  '{gsub(/<%=lxc%>/, "'${LXC_USER_NAME}'");gsub(/<%=repo%>/, "'${REPO}'");print $0;}' | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/apache2/sites-enabled/000-default.conf"
     sudo lxc-stop -n $L_NAME -t ubuntu
-    # sudo cat "./interfaces.default"  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
-    # sleep 3
-    # sudo lxc-start -n $L_NAME -d # error
+    sudo cat "./interfaces.default"  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
+    sudo lxc-start -n $L_NAME -d # error
+    sleep 4
+    sudo lxc-stop -n $L_NAME -t ubuntu
     echo "[FINISH] --------- restart lxc\n"
 }
-
 
 set_bridge() {
     sudo cat "./templete.xml" | awk '{gsub(/<%=lxcname%>/, "'${L_NAME}'");print $0;}' > tmp.xml
@@ -121,6 +121,7 @@ main() {
         create_post_hook
 
         clone_repo
+        restart_lxc
         stop_lxc
         set_bridge
         restart_apache
