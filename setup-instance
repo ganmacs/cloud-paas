@@ -31,15 +31,13 @@ create_and_copy_lxc_pubkey() {
     # cp /root/.ssh/id_rsa.pub "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
     # cat /home/git/.ssh/id_rsa.pub >> "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
     # lxc-attach -n "$L_NAME" -- chmod -R 700 "/home/$LXC_USER_NAME/.ssh"
-
-    ssh "$LXC_USER_NAME@157.82.3.167" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
-
-
     # lxc-attach -n "$L_NAME" -- chown -R "$LXC_USER_NAME:$LXC_USER_NAME" "/home/$LXC_USER_NAME/.ssh"
 
     local pub_key_path="/home/gitadmin/gitolite-admin/keydir/$L_NAME.pub"
-    cp /root/.ssh/config "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/config"
 
+    ssh "$LXC_USER_NAME@157.82.3.167" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
+
+    cp /root/.ssh/config "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/config"
     lxc-attach -n "$L_NAME" -- cat "/home/$LXC_USER_NAME/.ssh/id_rsa.pub" > "$pub_key_path"
     chmod 700 "$pub_key_path"
     chown gitadmin:gitadmin "$pub_key_path"
@@ -108,8 +106,7 @@ set_bridge() {
 
 restart_apache() {
     # lxc-attach -n "$L_NAME" -- service apache2 restart
-    lxc-enter-namespace --noseclabel $L_NAME -- service apache2 restart
-
+    virsh -c lxc:/// lxc-enter-namespace --noseclabel $L_NAME -- service apache2 restart
 }
 
 main() {
