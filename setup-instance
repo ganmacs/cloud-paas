@@ -20,45 +20,25 @@ L_NAME="$REPO.$NAME"
 LXC_USER_NAME="obana"
 
 create_lxc() {
-    sudo lxc-create -n $L_NAME -t ubuntu
+    lxc-create -t ubuntu -n $L_NAME -- --packages=apache2,git --auth-key=/root/key --mirror="http://ftp.jaist.ac.jp/ubuntu"
     sudo cat ./interfaces  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
     sudo lxc-start -n $L_NAME -d # error
     echo "[FINISH] --------- created lxc\n"
 }
 
-setup_lxc () {
-    sleep 2
-    lxc-attach -n "$L_NAME" -- apt-get update
-    lxc-attach -n "$L_NAME" -- apt-get install -y apache2
-    lxc-attach -n "$L_NAME" -- apt-get install -y git
-    echo "[FINISH] --------- setup lxc\n"
-}
-
-restart_lxc() {
-    sudo lxc-stop -n $L_NAME -t ubuntu
-    sudo cat "./interfaces.default"  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
-    sleep 4
-    sudo lxc-start -n $L_NAME -d # error
-    echo "[FINISH] --------- restart lxc\n"
-}
-
-set_bridge() {
-    sudo cat "./templete.xml" | awk '{gsub(/<%=lxcname%>/, "'${L_NAME}'");print $0;}' > tmp.xml
-    sudo virsh -c lxc:// define tmp.xml
-    sudo virsh -c lxc:// start $L_NAME
-    echo "[FINISH] --------- set bridge\n"
-}
-
 create_and_copy_lxc_pubkey() {
+    # lxc-attach -n "$L_NAME" -- mkdir -m 700 "/home/$LXC_USER_NAME/.ssh"
+    # cp /root/.ssh/id_rsa.pub "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
+    # cat /home/git/.ssh/id_rsa.pub >> "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
+    # lxc-attach -n "$L_NAME" -- chmod -R 700 "/home/$LXC_USER_NAME/.ssh"
+
+    ssh "$LXC_USER_NAME@157.82.3.167" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
+
+
+    # lxc-attach -n "$L_NAME" -- chown -R "$LXC_USER_NAME:$LXC_USER_NAME" "/home/$LXC_USER_NAME/.ssh"
+
     local pub_key_path="/home/gitadmin/gitolite-admin/keydir/$L_NAME.pub"
-
-    lxc-attach -n "$L_NAME" -- mkdir -m 700 "/home/$LXC_USER_NAME/.ssh"
     cp /root/.ssh/config "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/config"
-    cp /root/.ssh/id_rsa.pub "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
-    cat /home/git/.ssh/id_rsa.pub >> "/var/lib/lxc/$L_NAME/rootfs/home/$LXC_USER_NAME/.ssh/authorized_keys"
-
-    lxc-attach -n "$L_NAME" -- chown -R "$LXC_USER_NAME:$LXC_USER_NAME" "/home/$LXC_USER_NAME/.ssh"
-    ssh "$LXC_USER_NAME@$L_NAME" "ssh-keygen -t rsa -N '' -f /home/$LXC_USER_NAME/.ssh/id_rsa"
 
     lxc-attach -n "$L_NAME" -- cat "/home/$LXC_USER_NAME/.ssh/id_rsa.pub" > "$pub_key_path"
     chmod 700 "$pub_key_path"
@@ -105,27 +85,44 @@ ssh $LXC_USER_NAME@$L_NAME \"cd /home/$LXC_USER_NAME/$REPO; git pull\""
 
 clone_repo() {
     local path="git@157.82.3.165:$NAME/$REPO.git"
-    ssh $LXC_USER_NAME@157.82.3.165 "git clone $path /home/$LXC_USER_NAME/$REPO"
+    ssh $LXC_USER_NAME@157.82.3.167 "git clone $path /home/$LXC_USER_NAME/$REPO"
     echo "[FINISH] --------- clone repo\n"
 }
 
-restart_apache() {
+stop_lxc() {
     sudo cat "./apache.conf" | awk  '{gsub(/<%=lxc%>/, "'${LXC_USER_NAME}'");gsub(/<%=repo%>/, "'${REPO}'");print $0;}' | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/apache2/sites-enabled/000-default.conf"
-    lxc-attach -n "$L_NAME" -- service apache2 restart
+    sudo lxc-stop -n $L_NAME -t ubuntu
+    # sudo cat "./interfaces.default"  | sudo tee "/var/lib/lxc/$L_NAME/rootfs/etc/network/interfaces"
+    # sleep 3
+    # sudo lxc-start -n $L_NAME -d # error
+    echo "[FINISH] --------- restart lxc\n"
+}
+
+
+set_bridge() {
+    sudo cat "./templete.xml" | awk '{gsub(/<%=lxcname%>/, "'${L_NAME}'");print $0;}' > tmp.xml
+    sudo virsh -c lxc:// define tmp.xml
+    sudo virsh -c lxc:// start $L_NAME
+    echo "[FINISH] --------- set bridge\n"
+}
+
+restart_apache() {
+    # lxc-attach -n "$L_NAME" -- service apache2 restart
+    lxc-enter-namespace --noseclabel $L_NAME -- service apache2 restart
+
 }
 
 main() {
     if [[ $# > 1 ]]; then
         create_lxc
-        setup_lxc
-        restart_lxc
-        set_bridge
         create_and_copy_lxc_pubkey
 
         create_git_repository
         create_post_hook
 
         clone_repo
+        stop_lxc
+        set_bridge
         restart_apache
         exit 0
     else
